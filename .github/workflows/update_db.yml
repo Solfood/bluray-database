@@ -1,0 +1,44 @@
+name: Monthly Database Update
+
+on:
+  schedule:
+    # Run at 00:00 on day 1 of every month
+    - cron: '0 0 1 * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  update-database:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip' # caching pip dependencies
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Run Monthly Scraper
+        run: python monthly_scraper.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add upc/ state_monthly.json
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No new movies discovered this month."
+          else
+            git commit -m "Automated DB Update: $(date +'%Y-%m-%d')"
+            git push
+          fi
