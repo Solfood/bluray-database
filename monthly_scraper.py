@@ -5,9 +5,12 @@ import time
 import os
 import re
 from datetime import datetime, date
+from urllib.parse import unquote, urlsplit
 
-DB_DIR = "upc"
-STATE_FILE = "state_monthly.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_DIR = os.path.join(BASE_DIR, "upc")
+STATE_FILE = os.path.join(BASE_DIR, "state_monthly.json")
+MOVIE_URL_RE = re.compile(r"/movies/[^/]+-Blu-ray/(\d+)/$")
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -83,6 +86,46 @@ def scrape_movie_detail(url):
         print(f"Error scraping detail {url}: {e}")
     return None
 
+def normalize_movie_url(href):
+    if not href:
+        return None
+
+    href = unquote(href)
+    if 'url=' in href:
+        href = href.split('url=', 1)[1]
+        href = unquote(href)
+
+    if href.startswith('/'):
+        href = f"https://www.blu-ray.com{href}"
+    elif href.startswith('//'):
+        href = f"https:{href}"
+    elif not href.startswith('http://') and not href.startswith('https://'):
+        return None
+
+    parsed = urlsplit(href)
+    if parsed.netloc not in ("www.blu-ray.com", "blu-ray.com"):
+        return None
+
+    clean_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+    match = MOVIE_URL_RE.search(parsed.path)
+    if not match:
+        return None
+    return clean_url, match.group(1)
+
+def extract_index_movies(soup):
+    candidates = []
+    for link in soup.find_all('a', href=True):
+        normalized = normalize_movie_url(link['href'])
+        if normalized:
+            candidates.append(normalized)
+
+    deduped = {}
+    for url, movie_id in candidates:
+        deduped.setdefault(movie_id, url)
+
+    ordered_ids = sorted(deduped.keys(), key=int)
+    return [(deduped[movie_id], movie_id) for movie_id in ordered_ids]
+
 def run_monthly_update():
     print("Starting Phase B: Monthly Update Scraper...")
     state = load_state()
@@ -99,25 +142,11 @@ def run_monthly_update():
         return
         
     soup = BeautifulSoup(res.text, 'html.parser')
-    all_links = soup.find_all('a', href=True)
-    movie_urls = []
-    
-    for l in all_links:
-        href = l['href']
-        if 'url=' in href:
-            href = href.split('url=')[1]
-            
-        if re.search(r'/movies/[a-zA-Z0-9-]+-Blu-ray/\d+/$', href):
-            if href.startswith('/'):
-                href = f"https://www.blu-ray.com{href}"
-            movie_urls.append(href)
-            
-    movie_urls = list(set(movie_urls))
-    print(f"Found {len(movie_urls)} recent releases on the calendar.")
+    movies = extract_index_movies(soup)
+    print(f"Found {len(movies)} recent releases on the calendar.")
     
     new_additions = 0
-    for m_url in movie_urls:
-        m_id = m_url.split('/')[-2]
+    for m_url, m_id in movies:
         
         if m_id in processed_ids:
             continue
