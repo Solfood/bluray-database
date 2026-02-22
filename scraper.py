@@ -31,6 +31,12 @@ def save_movie(movie_data):
     if not upc:
         return
         
+    # Edge case hardening: Strip non-numeric and ensure at least 3 chars
+    upc = re.sub(r'\D', '', str(upc))
+    if len(upc) < 3:
+        upc = upc.zfill(3)
+    movie_data['upc'] = upc # Ensure cleaned UPC is saved
+        
     # Create chunked path: upc/0/4/3/0433...json
     chunk_path = os.path.join(DB_DIR, upc[0], upc[1], upc[2])
     os.makedirs(chunk_path, exist_ok=True)
