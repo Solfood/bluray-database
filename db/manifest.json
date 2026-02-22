@@ -1,0 +1,41 @@
+{
+  "version": "2026-02-22T03:13:43.494536+00:00",
+  "generated_at": "2026-02-22T03:13:43.494536+00:00",
+  "counts": {
+    "raw_records_seen": 0,
+    "invalid_raw_records": 0,
+    "canonical_movies": 0,
+    "upc_entries": 0,
+    "review_queue_items": 0
+  },
+  "files": {
+    "db/movie_by_id.json": {
+      "sha256": "ab29572a2f9568d22c6e7f2940b43d723ba7ed128a1c97c58573678ebbab4df9",
+      "bytes": 136
+    },
+    "db/upc_index.json": {
+      "sha256": "9e82a3fe55fcff06f250d4c471a1f49c528123a19788d48dab758c72aeeecf4e",
+      "bytes": 134
+    },
+    "db/title_year_index.json": {
+      "sha256": "9e82a3fe55fcff06f250d4c471a1f49c528123a19788d48dab758c72aeeecf4e",
+      "bytes": 134
+    },
+    "db/review_queue.json": {
+      "sha256": "5629ed805cb7eef25525493cc98d87a9bff5827b149d80da4b3e3edb7fbed660",
+      "bytes": 134
+    },
+    "db/staging_candidates.json": {
+      "sha256": "ab29572a2f9568d22c6e7f2940b43d723ba7ed128a1c97c58573678ebbab4df9",
+      "bytes": 136
+    },
+    "upc_index.json": {
+      "sha256": "9e82a3fe55fcff06f250d4c471a1f49c528123a19788d48dab758c72aeeecf4e",
+      "bytes": 134
+    },
+    "title_index.json": {
+      "sha256": "8912ce5420a32175e6b2df5b1d5601acd0db22f268b8f32f9c8a39ae23ff0e70",
+      "bytes": 147
+    }
+  }
+}
