@@ -16,6 +16,19 @@ HEADERS = {
     'Connection': 'keep-alive',
 }
 
+def fetch_with_retry(url, max_retries=5, backoff_factor=2):
+    """Fetches a URL with exponential backoff on connection errors/timeouts."""
+    for attempt in range(max_retries):
+        try:
+            res = requests.get(url, headers=HEADERS, timeout=15)
+            return res
+        except requests.exceptions.RequestException as e:
+            wait_time = backoff_factor ** attempt
+            print(f"Connection error: {e}. Retrying in {wait_time}s...")
+            time.sleep(wait_time)
+    print(f"Failed to fetch {url} after {max_retries} retries.")
+    return None
+
 def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE, 'r') as f:
@@ -45,8 +58,8 @@ def save_movie(movie_data):
 
 def scrape_movie_detail(url):
     try:
-        res = requests.get(url, headers=HEADERS, timeout=10)
-        if res.status_code != 200:
+        res = fetch_with_retry(url)
+        if not res or res.status_code != 200:
             return None
             
         soup = BeautifulSoup(res.text, 'html.parser')
@@ -79,10 +92,10 @@ def run_monthly_update():
     calendar_url = "https://www.blu-ray.com/movies/movies.php?show=newreleases"
     
     print(f"Fetching calendar: {calendar_url}")
-    res = requests.get(calendar_url, headers=HEADERS, timeout=10)
+    res = fetch_with_retry(calendar_url)
     
-    if res.status_code != 200:
-        print(f"Failed to fetch calendar: {res.status_code}")
+    if not res or res.status_code != 200:
+        print(f"Failed to fetch calendar.")
         return
         
     soup = BeautifulSoup(res.text, 'html.parser')

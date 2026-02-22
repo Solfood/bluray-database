@@ -15,6 +15,19 @@ HEADERS = {
     'Connection': 'keep-alive',
 }
 
+def fetch_with_retry(url, max_retries=5, backoff_factor=2):
+    """Fetches a URL with exponential backoff on connection errors/timeouts."""
+    for attempt in range(max_retries):
+        try:
+            res = requests.get(url, headers=HEADERS, timeout=15)
+            return res
+        except requests.exceptions.RequestException as e:
+            wait_time = backoff_factor ** attempt
+            print(f"Connection error: {e}. Retrying in {wait_time}s...")
+            time.sleep(wait_time)
+    print(f"Failed to fetch {url} after {max_retries} retries.")
+    return None
+
 def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE, 'r') as f:
@@ -48,9 +61,9 @@ def save_movie(movie_data):
 def scrape_movie_detail(url):
     """Scrapes a specific movie page to extract the UPC."""
     try:
-        res = requests.get(url, headers=HEADERS, timeout=10)
-        if res.status_code != 200:
-            print(f"Failed to get {url}: {res.status_code}")
+        res = fetch_with_retry(url)
+        if not res or res.status_code != 200:
+            print(f"Failed to get {url}")
             return None
             
         soup = BeautifulSoup(res.text, 'html.parser')
@@ -93,9 +106,9 @@ def run_backfill():
         # Note: You have to find a valid index URL. E.g., The main search page with no query sorts by popularity
         url = f"https://www.blu-ray.com/movies/movies.php?show=all&page={current_page}"
         
-        res = requests.get(url, headers=HEADERS, timeout=10)
-        if res.status_code != 200:
-            print(f"Index fetch failed: {res.status_code}")
+        res = fetch_with_retry(url)
+        if not res or res.status_code != 200:
+            print(f"Index fetch failed for page {current_page}.")
             break
             
         soup = BeautifulSoup(res.text, 'html.parser')
