@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+backfill.log
+backfill.*.log
+*.pre_reset.json
