@@ -87,10 +87,7 @@ def run_backfill():
     current_page = state.get('last_page', 1)
     processed_ids = set(state.get('processed_ids', []))
     
-    # We will try a few pages to prove it works
-    MAX_PAGES_TO_TEST = current_page + 2 
-    
-    while current_page < MAX_PAGES_TO_TEST:
+    while True:
         print(f"\n--- Scraping Index Page {current_page} ---")
         # Example list URL for blu-ray.com (Popular/All movies)
         # Note: You have to find a valid index URL. E.g., The main search page with no query sorts by popularity
